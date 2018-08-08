@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Post pipeline state to Slack
+
+Parameters:
+  SlackWebhookUrl:
+    Type: String
+  SlackUsername:
+    Type: String
+    Default: ""
+  SlackIconUrl:
+    Type: String
+    Default: ""
+  SlackIconEmoji:
+    Type: String
+    Default: ""
+  SlackChannel:
+    Type: String
+    Default: ""
+  TargetState:
+    Type: CommaDelimitedList
+    Default: CANCELED,FAILED,RESUMED,STARTED,SUCCEEDED
+  Pipeline:
+    Default: ''
+    Type: CommaDelimitedList
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameter
+        Parameters:
+          - SlackWebhookUrl
+      - Label:
+          default: Optional parameter
+        Parameters:
+          - SlackUsername
+          - SlackIconUrl
+          - SlackIconEmoji
+          - SlackChannel
+          - TargetState
+          - Pipeline
+    ParameterLabels:
+      SlackWebhookUrl:
+        default: Post destination URL
+      SlackUsername:
+        default: Username for posting
+      SlackIconUrl:
+        default: Icon URL for posting
+      SlackIconEmoji:
+        default: Icon emoji for posting
+      SlackChannel:
+        default: Post destination channel
+      TargetState:
+        default: Taget pipeline state
+      Pipeline:
+        default: Target pipeline name
+
+Conditions:
+  IsEmptyPipeline:
+    Fn::Equals:
+      - Fn::Select: [0, !Ref Pipeline]
+      - ''
+
+Resources:
+  Func:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: ./src
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+          SLACK_USERNAME: !Ref SlackUsername
+          SLACK_ICON_URL: !Ref SlackIconUrl
+          SLACK_ICON_EMOJI: !Ref SlackIconEmoji
+          SLACK_CHANNEL: !Ref SlackChannel
+      Events:
+        ScheduleEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - 'aws.codepipeline'
+              detail-type:
+                - CodePipeline Stage Execution State Change
+              detail:
+                state: !Ref TargetState
+                pipeline:
+                  Fn::If:
+                    - IsEmptyPipeline
+                    - !Ref AWS::NoValue
+                    - !Ref Pipeline

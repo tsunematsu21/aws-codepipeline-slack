@@ -1,0 +1,20 @@
+{
+  "name": "aws-codepipeline-slack",
+  "version": "1.0.0",
+  "description": "Post to Slack when CodePipeline changed state.",
+  "main": "index.js",
+  "repository": "https://github.com/tsunematsu21/aws-codepipeline-slack",
+  "author": "tsunematsu21 <tsunematsu21@users.noreply.github.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "lint": "eslint src/index.js",
+    "validate": "aws cloudformation validate-template --template-body file://sam.yml",
+    "package": "aws cloudformation package --template-file sam.yml --output-template-file sam.packaged.yml",
+    "deploy": "aws cloudformation deploy --template-file sam.packaged.yml --capabilities CAPABILITY_IAM"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.6",
+    "eslint": "^5.3.0"
+  }
+}
